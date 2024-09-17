@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -84,8 +85,26 @@ func (u *User) DoMessage(msg string) {
 			s.OnlineMap[newName] = u
 			s.mapLock.Unlock()
 
-			u.SendMsg("Rename successful")
+			u.SendMsg("Rename successful\n")
 		} // rename|nickname
+
+	} else if len(msg) > 4 && msg[:3] == "to|" {
+		// 消息格式 to|username|message
+		remoteName := strings.Split(msg, "|")[1]
+
+		if s.OnlineMap[remoteName] == nil {
+			u.SendMsg("The user does not exist\n")
+			return
+		}
+
+		remoteUser := s.OnlineMap[remoteName]
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			u.SendMsg("Message cannot be empty\n")
+			return
+		}
+
+		remoteUser.SendMsg(u.Name + " to you: " + content)
 
 	} else {
 		s.BroadCast(u, msg)
