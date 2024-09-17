@@ -55,9 +55,27 @@ func (u *User) Offline() {
 	s.BroadCast(u, u.Name+" is offline")
 }
 
+// SendMsg 给当前用户的客户端发送消息
+func (u *User) SendMsg(msg string) {
+	_, _ = u.conn.Write([]byte(msg))
+}
+
 // DoMessage 用户处理消息的业务
 func (u *User) DoMessage(msg string) {
-	u.sever.BroadCast(u, msg)
+	s := u.sever
+	if msg == "who" {
+		// 查询当前在线用户
+		s.mapLock.Lock()
+		for _, user := range s.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ": online...\n"
+			u.SendMsg(onlineMsg)
+		}
+		s.mapLock.Unlock()
+	} else {
+		s.BroadCast(u, msg)
+	}
+
+	// s.BroadCast(u, msg)
 }
 
 // ListenMessage 监听当前 user channel 的方法，一旦有消息，就直接发送给对端客户端

@@ -62,10 +62,10 @@ func (s *Server) Handler(conn net.Conn) {
 		for {
 			n, err := conn.Read(buf)
 			if err != nil && err != io.EOF {
-				user.Offline()
+				fmt.Println("conn.Read err:", err)
 				return
 			} else if n == 0 {
-				s.BroadCast(user, user.Name+" is offline")
+				user.Offline()
 				return
 			}
 
