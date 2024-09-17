@@ -71,11 +71,25 @@ func (u *User) DoMessage(msg string) {
 			u.SendMsg(onlineMsg)
 		}
 		s.mapLock.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		newName := msg[7:]
+		// 判断 newName 是否存在
+		_, ok := s.OnlineMap[newName]
+		if ok {
+			u.SendMsg("The username is already in use\n")
+		} else {
+			s.mapLock.Lock()
+			delete(s.OnlineMap, u.Name)
+			u.Name = newName
+			s.OnlineMap[newName] = u
+			s.mapLock.Unlock()
+
+			u.SendMsg("Rename successful")
+		} // rename|nickname
+
 	} else {
 		s.BroadCast(u, msg)
 	}
-
-	// s.BroadCast(u, msg)
 }
 
 // ListenMessage 监听当前 user channel 的方法，一旦有消息，就直接发送给对端客户端
