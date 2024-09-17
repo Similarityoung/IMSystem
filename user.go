@@ -10,22 +10,54 @@ type User struct {
 	Addr string
 	C    chan string
 	conn net.Conn
+
+	sever *Server
 }
 
-func NewUser(conn net.Conn) *User {
+func NewUser(conn net.Conn, sever *Server) *User {
 	userAddr := conn.RemoteAddr().String()
 
 	user := &User{
-		Name: userAddr,
-		Addr: userAddr,
-		C:    make(chan string),
-		conn: conn,
+		Name:  userAddr,
+		Addr:  userAddr,
+		C:     make(chan string),
+		conn:  conn,
+		sever: sever,
 	}
 
 	// 启动监听当前 user channel 消息的 goroutine
 	go user.ListenMessage()
 
 	return user
+}
+
+// Online 用户的上线业务
+func (u *User) Online() {
+	// save user to online map
+	s := u.sever
+
+	s.mapLock.Lock()
+	s.OnlineMap[u.Name] = u
+	s.mapLock.Unlock()
+
+	// broadcast user online
+	s.BroadCast(u, u.Name+" is online")
+}
+
+// Offline 用户的下线业务
+func (u *User) Offline() {
+
+	s := u.sever
+	s.mapLock.Lock()
+	delete(s.OnlineMap, u.Name)
+	s.mapLock.Unlock()
+
+	s.BroadCast(u, u.Name+" is offline")
+}
+
+// DoMessage 用户处理消息的业务
+func (u *User) DoMessage(msg string) {
+	u.sever.BroadCast(u, msg)
 }
 
 // ListenMessage 监听当前 user channel 的方法，一旦有消息，就直接发送给对端客户端
