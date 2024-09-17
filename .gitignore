@@ -9,9 +9,6 @@
 # BlueJ files
 *.ctxt
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
 # Package Files #
 *.jar
 *.war
@@ -29,13 +26,6 @@ hs_err_pid*
 # Mac
 **/.DS_Store
 
-.trash
-
-target
-
-.obsidian/workspace.json
-
-.obsidian/app.json
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #

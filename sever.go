@@ -3,24 +3,65 @@ package main
 import (
 	"fmt"
 	"net"
+	"sync"
 )
 
 type Server struct {
 	Ip   string
 	Port int
+
+	// online user list
+	OnlineMap map[string]*User
+	mapLock   sync.RWMutex
+
+	// message channel
+	Message chan string
 }
 
 // NewServer 创建一个 server 的接口
 func NewServer(ip string, port int) *Server {
 	return &Server{
-		Ip:   ip,
-		Port: port,
+		Ip:        ip,
+		Port:      port,
+		OnlineMap: make(map[string]*User),
+		Message:   make(chan string),
 	}
+}
+
+// ListenMessage 监听 Message channel 的方法，一旦有消息，就发送给全部在线的用户
+func (s *Server) ListenMessage() {
+	for {
+		msg := <-s.Message
+
+		// send msg to all online users
+		s.mapLock.Lock()
+		for _, cli := range s.OnlineMap {
+			cli.C <- msg
+		}
+		s.mapLock.Unlock()
+	}
+}
+
+// BroadCast 监听 Message channel 的方法，一旦有消息就发送给全部在线的用户
+func (s *Server) BroadCast(user *User, msg string) {
+	sendMsg := "[" + user.Addr + "] " + user.Name + ": " + msg
+	s.Message <- sendMsg
 }
 
 func (s *Server) Handler(conn net.Conn) {
 	// current connection handler
-	fmt.Println("connect success")
+	user := NewUser(conn)
+
+	// save user to online map
+	s.mapLock.Lock()
+	s.OnlineMap[user.Name] = user
+	s.mapLock.Unlock()
+
+	// broadcast user online
+	s.BroadCast(user, user.Name+" is online")
+	//fmt.Println("user online:", user.Name)
+	// 阻塞当前 handler
+	select {}
 }
 
 // Start 启动 server
@@ -39,6 +80,9 @@ func (s *Server) Start() {
 			return
 		}
 	}(listen)
+
+	// 启动监听 Message 的 goroutine
+	go s.ListenMessage()
 
 	for {
 		// accept
