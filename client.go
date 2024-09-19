@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -24,7 +26,7 @@ func NewClient(severIp string, severPort int) *Client {
 	}
 
 	// connect to server
-	conn, err := net.Dial("TCP", fmt.Sprintf("%s:%d", severIp, severPort))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", severIp, severPort))
 	if err != nil {
 		fmt.Println("net.Dial error:", err)
 		return nil
@@ -36,6 +38,17 @@ func NewClient(severIp string, severPort int) *Client {
 
 }
 
+func (client *Client) DealResponse() {
+
+	// io.Copy 是 Go 语言中用于从一个 Reader 复制数据到一个 Writer 的常用函数。
+	// 它的作用是高效地将数据从输入流复制到输出流，直到遇到 EOF（文件结束）或发生错误。
+	// 永久阻塞监听服务器广播消息
+	_, err := io.Copy(os.Stdout, client.conn)
+	if err != nil {
+		return
+	}
+}
+
 var severIp string
 var severPort int
 
@@ -45,6 +58,24 @@ var severPort int
 func init() {
 	flag.StringVar(&severIp, "ip", "127.0.0.1", "设置服务器IP地址（默认是127.0.0.1)")
 	flag.IntVar(&severPort, "port", 8888, "设置服务器端口（默认是8888）")
+}
+
+func (client *Client) UpdateName() bool {
+
+	fmt.Println("Please enter your new name:")
+	_, err := fmt.Scanln(&client.Name)
+	if err != nil {
+		return false
+	}
+
+	sendMsg := "rename|" + client.Name + "\n"
+	_, err = client.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn.Write err:", err)
+		return false
+	}
+
+	return true
 }
 
 func (client *Client) menu() bool {
@@ -80,7 +111,9 @@ func (client *Client) Run() {
 		case 2:
 			fmt.Println("Private chat")
 		case 3:
-			fmt.Println("Rename")
+			fmt.Println("Rename...")
+			client.UpdateName()
+			break
 		}
 	}
 }
@@ -96,6 +129,8 @@ func main() {
 		fmt.Println("Failed to connect to server")
 		return
 	}
+	// 启动监听服务器返回消息的 goroutine
+	go client.DealResponse()
 
 	fmt.Println("Successfully connected to server")
 
