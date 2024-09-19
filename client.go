@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 )
@@ -10,6 +11,16 @@ type Client struct {
 	ServerPort int
 	Name       string
 	conn       net.Conn
+}
+
+var severIp string
+var severPort int
+
+// func init() 是 Go 语言中的特殊函数，它会自动执行。
+// 具体来说，init() 函数的执行时间是程序启动时，在 main() 函数运行之前执行。你不需要显式调用 init()，Go 运行时会自动调用它。
+func init() {
+	flag.StringVar(&severIp, "ip", "127.0.0.1", "设置服务器IP地址（默认是127.0.0.1)")
+	flag.IntVar(&severPort, "port", 8888, "设置服务器端口（默认是8888）")
 }
 
 func NewClient(severIp string, severPort int) *Client {
@@ -34,7 +45,12 @@ func NewClient(severIp string, severPort int) *Client {
 }
 
 func main() {
-	client := NewClient("127.0.0.1", 8888)
+
+	// command line parsing
+	flag.Parse()
+
+	client := NewClient(severIp, severPort)
+
 	if client == nil {
 		fmt.Println("Failed to connect to server")
 		return
