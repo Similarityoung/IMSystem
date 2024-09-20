@@ -78,6 +78,36 @@ func (client *Client) UpdateName() bool {
 	return true
 }
 
+func (client *Client) PublicChat() {
+
+	// send message to server
+	var chatMsg string
+
+	fmt.Println("Please enter your message, type 'exit' to exit")
+	_, err := fmt.Scanln(&chatMsg)
+	if err != nil {
+		return
+	}
+
+	for chatMsg != "exit" {
+		if len(chatMsg) != 0 {
+			sendMsg := chatMsg + "\n"
+			_, err := client.conn.Write([]byte(sendMsg))
+			if err != nil {
+				fmt.Println("conn.Write err:", err)
+				break
+			}
+		}
+
+		chatMsg = ""
+		fmt.Println("Please enter your message, type 'exit' to exit")
+		_, err := fmt.Scanln(&chatMsg)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (client *Client) menu() bool {
 	var f int
 
@@ -108,6 +138,8 @@ func (client *Client) Run() {
 		switch client.flag {
 		case 1:
 			fmt.Println("Public chat")
+			client.PublicChat()
+			break
 		case 2:
 			fmt.Println("Private chat")
 		case 3:
