@@ -108,6 +108,55 @@ func (client *Client) PublicChat() {
 	}
 }
 
+// SelectUsers search online users
+func (client *Client) SelectUsers() {
+
+	sendMsg := "who\n"
+	_, err := client.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn.Write err:", err)
+		return
+	}
+}
+
+func (client *Client) PrivateChat() {
+
+	// send message to server
+	var chatMsg string
+	var remoteName string
+
+	client.SelectUsers()
+	fmt.Println("Please enter the username you want to chat with, type 'exit' to exit")
+	_, err1 := fmt.Scanln(&remoteName)
+	if err1 != nil {
+		return
+	}
+
+	fmt.Println("Please enter your message, type 'exit' to exit")
+	_, err := fmt.Scanln(&chatMsg)
+	if err != nil {
+		return
+	}
+
+	for chatMsg != "exit" {
+		if len(chatMsg) != 0 {
+			sendMsg := "to|" + remoteName + "|" + chatMsg + "\n\n"
+			_, err := client.conn.Write([]byte(sendMsg))
+			if err != nil {
+				fmt.Println("conn.Write err:", err)
+				break
+			}
+		}
+
+		chatMsg = ""
+		fmt.Println("Please enter your message, type 'exit' to exit")
+		_, err := fmt.Scanln(&chatMsg)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (client *Client) menu() bool {
 	var f int
 
@@ -142,6 +191,7 @@ func (client *Client) Run() {
 			break
 		case 2:
 			fmt.Println("Private chat")
+			client.PrivateChat()
 		case 3:
 			fmt.Println("Rename...")
 			client.UpdateName()
